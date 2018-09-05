@@ -1,4 +1,4 @@
-﻿define(['module', 'vue'], function (module, Vue) {
+﻿define(['module', 'vue'], function (_module, Vue) {
     'use strict';
     
     // 性能测试标志和性能测试工具
@@ -100,8 +100,14 @@
     VueCompLoader.prototype.styleParser = function (_content, _attrs) {
         _attrs["id"] = this.moduleName + "_vue_style_" + Date.now();
         _attrs["type"] || (_attrs["type"] = "text/css");
-        _attrs["src"] && (_attrs["src"] = this.require.toUrl(_attrs["src"]));
-        VueCompLoader.createElement("style", _content, _attrs);
+        if (_attrs["src"]) {
+            // 如果是外部文件定义的风格，则进行外部文件式的加载
+            _attrs["src"] = this.require.toUrl(_attrs["src"]);
+            this.require([_module.id + "!" + _attrs["src"]]);
+        } else {
+            // 如果内嵌了风格定义，则直接创建标签
+            VueCompLoader.createElement("style", _content, _attrs);
+        }
     }
 
     /**
@@ -221,39 +227,45 @@
         }
     }
 
+    // 插件的导出对象
     let _exportor = {
         version: "1.0.0",
 
         // loader配置对象
-        config: null,
+        config: (_module.config() || { baseFolder: "" }),
 
         // 加载插件的必要加载方法
         load: function (_name, _req, _onload, _config) {
-            // 获取配置
-            if (!_exportor.config) {
-                _exportor.config = _config.vueLoader || undefined;
+            if (/\.css$/ig.test(_name)) {
+                // 对CSS的加载是直接插入style标签
+                _onload(VueCompLoader.createElement("style", null, { src: _name, type: "text/css" }));
+            } else {
+                // 其他加载内容都认为是vue文件，进行获取资源处理
+                _req(["text!" + _name], function (_text) {
+                    try {
+                        // 生成处理对象实例进行处理
+                        let _loader = new VueCompLoader(_name, _onload, _req);
+                        _loader.parse(_text);
+                    } catch (_err) {
+                        _onload.error(_err);
+                    }
+                });
             }
-            let _baseFolder = ((typeof _exportor.config == "object") ? (_exportor.config.baseFolder || "") : "");
-            // 修正路径
-            let _path = _name;
-            if (!/.vue$/ig.test(_path)) {
-                _path += ".vue";
+        },
+
+        // 将资源名称转化为标准路径名
+        normalize: function (_name, _fn) {
+            if (_name[0] == "?") {
+                _name = _fn(_exportor.config.baseFolder + "/" + _name.substr(1));
             }
-            if (_path[0] == "?") {
-                _path = _baseFolder + "/" + _path.substr(1);
-            }
-            // 获取资源
-            _req(["text!" + _path], function (_text) {
-                try {
-                    // 生成处理对象实例进行处理
-                    let _loader = new VueCompLoader(_path, _onload, _req);
-                    _loader.parse(_text);
-                } catch (_err) {
-                    _onload.error(_err);
-                }
-            });
+            /\.css$|\.vue$/ig.test(_name) || (_name += ".vue");
+            console.log("normalize", _name);
+            return _name;
         }
     };
+
+    // 校正配置参数
+    (_exportor.config.baseFolder || (_exportor.config.baseFolder = ""));
 
     return _exportor;
 });
