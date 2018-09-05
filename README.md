@@ -8,8 +8,10 @@ require.config({
         "text": "/lib/plugins/text", // rewrite as your actual path    
         "vueloader": "/lib/plugins/tinyVueLoader", // rewrite as your actual path     
     },    
-    vueLoader: {    
-        baseFolder: "/vueComponents" // rewrite as your actual path for the components    
+    config: {    
+        vueLoader: {    
+            baseFolder: "/vueComponents" // rewrite as your actual path for the components    
+        }    
     }    
     ...    
 });    
@@ -35,8 +37,10 @@ require.config({
         "text": "/lib/plugins/text", // 该插件依赖插件，请按照你的实际路径来配置    
         "vueloader": "/lib/plugins/tinyVueLoader", // 请按照你的实际路径来配置    
     },    
-    vueLoader: {    
-        baseFolder: "/vueComponents" // 请配置为你存放vue组件文件的路径    
+    config: {    
+        vueLoader: {    
+            baseFolder: "/vueComponents" // 请配置为你存放vue组件文件的路径    
+        }    
     }    
     ...    
 });    
